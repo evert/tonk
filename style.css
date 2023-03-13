@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Ultra&display=swap');
+
+body {
+  background: #338833;
+  font-family: Ultra, Times, Serif;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  margin: 0 auto;
+  text-align: center;
+  font-size: 50px;
+}
+
+canvas {
+  background: white;
+  margin: 0 auto;
+}
