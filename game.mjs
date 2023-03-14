@@ -435,7 +435,6 @@ class AITank extends Tank {
 
   step() {
 
-    /*
     if (chance(20)) {
       this.orientation = rand(1,5);
     }
@@ -443,7 +442,6 @@ class AITank extends Tank {
       this.shoot();
     }
     this.move();
-    */
 
   }
 
