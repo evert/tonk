@@ -24,7 +24,7 @@ class GameObject {
 
 }
 
-class VisibleGameObject extends GameObject {
+export class VisibleGameObject extends GameObject {
 
   /**
    * @param {Game} game
@@ -370,6 +370,20 @@ export class AITank extends Tank {
       this.shoot();
     }
     this.move();
+
+  }
+
+}
+
+export class Brick extends VisibleGameObject {
+
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   */
+  draw(ctx) {
+  
+    ctx.fillStyle = '#880000';
+    ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
 
   }
 
