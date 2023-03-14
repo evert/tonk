@@ -75,7 +75,6 @@ function render() {
  */
 function keyDown(ev) {
 
-  ev.preventDefault();
   switch(ev.key) {
 
     case 'ArrowUp' : playerSprite.move(1); break;
