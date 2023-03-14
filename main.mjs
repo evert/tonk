@@ -109,6 +109,7 @@ function loadLevel(game, levelSpec) {
       switch(cell) {
 
         case '#' :
+          // Every cell in the level results in 4 brick sprites, so they can individually break
           result.push(
             new Brick(game, columnNum*cellSize+spriteRadius,   lineNum*cellSize+spriteRadius,   spriteRadius),
             new Brick(game, columnNum*cellSize+spriteRadius*3, lineNum*cellSize+spriteRadius,   spriteRadius),
