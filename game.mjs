@@ -65,7 +65,7 @@ function step() {
 function render() {
 
   ctx.clearRect(0, 0, game.width, game.height);
-  for(const sprite of sprites) sprite.draw(ctx);
+  for(const sprite of sprites) sprite.render(ctx);
   window.requestAnimationFrame(render);
 
 }
@@ -92,6 +92,15 @@ function keyDown(ev) {
 
 class GameObject {
 
+  free() {
+    sprites.delete(this);
+    behaviours.delete(this);
+  }
+
+}
+
+class VisibleGameObject extends GameObject {
+
   /**
    * @param {number} posX
    * @param {number} posY
@@ -99,6 +108,7 @@ class GameObject {
    */
   constructor(posX, posY, spriteRadius) {
 
+    super();
     this.spriteRadius = spriteRadius;
     this.posX = posX;
     this.posY = posY;
@@ -111,33 +121,100 @@ class GameObject {
 
   }
 
-  free() {
-    sprites.delete(this);
-    behaviours.delete(this);
+  /**
+   * Renders the object.
+   *
+   * This function will save and restore the canvas state, and set pixel
+   * translation to the center of the object.
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   */
+  render(ctx) {
+
+    if (!('draw' in this)) {
+      throw new Error('This GameObject is not drawable');
+    }
+    ctx.save();
+    ctx.translate(this.posX, this.posY);
+    (this).draw(ctx);
+    ctx.restore();
+
   }
 
   /**
-   * @param {GameObject} sprite
+   * @param {CanvasRenderingContext2D} ctx
+   * @abstract
+   */
+  draw(ctx) {
+
+    throw new Error('Draw is not implemented');
+
+  }
+
+  /**
+   * @param {VisibleGameObject} sprite
    */
   intersects(sprite) {
 
-    const aXmin = this.posX-this.spriteRadius;
-    const aXmax = this.posX+this.spriteRadius;
-    const aYmin = this.posY-this.spriteRadius;
-    const aYmax = this.posY+this.spriteRadius;
-    const bXmin = sprite.posX-sprite.spriteRadius;
-    const bXmax = sprite.posX+sprite.spriteRadius;
-    const bYmin = sprite.posY-sprite.spriteRadius;
-    const bYmax = sprite.posY+sprite.spriteRadius;
-    return aXmax >= bXmin && bXmax >= aXmin && aYmax >= bYmin && bYmax >= aYmin;
+    const a = this.getBoundingBox();
+    const b = sprite.getBoundingBox();
 
+    const boundingBoxIntersect = a.xMax >= b.xMin && b.xMax >= a.xMin && a.yMax >= b.yMin && b.yMax >= a.yMin;
+    if (!boundingBoxIntersect) return false;
+
+    const aMask = this.getMask();
+    const bMask = sprite.getMask();
+    for(const xy of aMask) {
+      if (bMask.has(xy)) {
+        return true;
+      }
+    }
+
+    return false;
+
+  }
+
+  /**
+   * Returns the bounding box coordinates
+   */
+  getBoundingBox() {
+
+    return {
+      xMin: this.posX-this.spriteRadius,
+      xMax: this.posX+this.spriteRadius,
+      yMin: this.posY-this.spriteRadius,
+      yMax: this.posY+this.spriteRadius,
+    };
+
+  }
+
+  getMask() {
+
+    /**
+     * Create a tiny invisible canvas to draw the item in
+     */
+    const offscreenCanvas = new OffscreenCanvas(this.spriteRadius*2, this.spriteRadius*2);
+    const ctx = /** @type any */ (offscreenCanvas.getContext('2d'));
+    ctx.translate(this.spriteRadius,this.spriteRadius);
+    this.draw(ctx);
+
+    const imgData = ctx.getImageData(0,0,this.spriteRadius*2,this.spriteRadius*2);
+    const mask = [];
+    for(let i=0; i<imgData.data.length;i+=4) {
+      const hasPixel = imgData[i]!==0 || imgData[i+1]!==0 || imgData[i+2]!==0;
+      if (hasPixel) {
+        const x = (i/4) % this.spriteRadius*2;
+        const y = Math.floor((i/4) / this.spriteRadius*2);
+        mask.push(`${x+this.posX},${y+this.posY}`);
+      }
+    }
+    return new Set(mask);
 
   }
 
 }
 
-
-class Tank extends GameObject {
+class Tank extends VisibleGameObject {
 
   /**
    * @param {number} posX
@@ -158,18 +235,15 @@ class Tank extends GameObject {
    */
   draw(ctx) {
 
-    ctx.save();
     ctx.fillStyle = this.color;
     ctx.beginPath();
     // Find middle 
-    ctx.translate(this.posX, this.posY);
     ctx.rotate(Math.PI*(this.orientation/2-0.5));
     ctx.moveTo(0, -this.spriteRadius);
     ctx.lineTo(this.spriteRadius, this.spriteRadius);
     ctx.lineTo(-this.spriteRadius, this.spriteRadius);
     ctx.closePath();
     ctx.fill();
-    ctx.restore();
 
   }
 
@@ -245,7 +319,7 @@ class Tank extends GameObject {
 
 }
 
-class Bullet extends GameObject {
+class Bullet extends VisibleGameObject {
 
   /**
    * @param {number} posX
@@ -280,16 +354,16 @@ class Bullet extends GameObject {
     this.color = '#000000';
   }
 
-  draw() {
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   */
+  draw(ctx) {
 
-    ctx.save();
     ctx.fillStyle = this.color;
     ctx.beginPath();
     // Find middle 
-    ctx.translate(this.posX, this.posY);
     ctx.arc(0, 0, this.spriteRadius, 0, 2 * Math.PI, false);
     ctx.fill();
-    ctx.restore();
 
   }
 
