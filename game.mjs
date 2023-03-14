@@ -27,7 +27,7 @@ function main() {
   for(let i=0; i<10;i++) {
     const tank = new AITank(rand(100,900),rand(100,700));
   }
-   
+
   const playerTank = new Tank(rand(100,900),rand(100,700), '#FF0000');
   sprites.add(playerTank);
   playerSprite = playerTank;
@@ -55,7 +55,7 @@ function legalPosition(x, y, spriteRadius) {
 }
 
 function step() {
-  
+
   for(const player of behaviours) {
     player.step();
   }
@@ -74,7 +74,8 @@ function render() {
  * @param {KeyboardEvent} ev
  */
 function keyDown(ev) {
-  
+
+  ev.preventDefault();
   switch(ev.key) {
 
     case 'ArrowUp' : playerSprite.move(1); break;
@@ -84,7 +85,6 @@ function keyDown(ev) {
     case ' ': playerSprite.shoot(); break;
 
   }
-  console.log(ev.key); 
 
 }
 
@@ -156,14 +156,17 @@ class VisibleGameObject extends GameObject {
    */
   intersects(sprite) {
 
+    // Wide check
     const a = this.getBoundingBox();
     const b = sprite.getBoundingBox();
 
     const boundingBoxIntersect = a.xMax >= b.xMin && b.xMax >= a.xMin && a.yMax >= b.yMin && b.yMax >= a.yMin;
     if (!boundingBoxIntersect) return false;
 
-    const aMask = this.getMask();
+    // Narrow check
     const bMask = sprite.getMask();
+    const aMask = this.getMask();
+
     for(const xy of aMask) {
       if (bMask.has(xy)) {
         return true;
@@ -188,26 +191,51 @@ class VisibleGameObject extends GameObject {
 
   }
 
+  /**
+   * Returns a Set with coorindates of all pixels this object occupies on the
+   * canvas.
+   *
+   * Used for hit detection.
+   */
   getMask() {
 
     /**
      * Create a tiny invisible canvas to draw the item in
      */
     const offscreenCanvas = new OffscreenCanvas(this.spriteRadius*2, this.spriteRadius*2);
-    const ctx = /** @type any */ (offscreenCanvas.getContext('2d'));
-    ctx.translate(this.spriteRadius,this.spriteRadius);
-    this.draw(ctx);
+    const octx = /** @type any */ (offscreenCanvas.getContext('2d'));
+    octx.translate(this.spriteRadius,this.spriteRadius);
+    this.draw(octx);
 
-    const imgData = ctx.getImageData(0,0,this.spriteRadius*2,this.spriteRadius*2);
+    const imgData = octx.getImageData(0,0,this.spriteRadius*2,this.spriteRadius*2);
+
+    /* @ts-ignore */
+    //document.getElementById('debug-canvas').getContext('2d').putImageData(imgData, this.posX-this.spriteRadius, this.posY-this.spriteRadius);
+
     const mask = [];
-    for(let i=0; i<imgData.data.length;i+=4) {
-      const hasPixel = imgData[i]!==0 || imgData[i+1]!==0 || imgData[i+2]!==0;
-      if (hasPixel) {
-        const x = (i/4) % this.spriteRadius*2;
-        const y = Math.floor((i/4) / this.spriteRadius*2);
-        mask.push(`${x+this.posX},${y+this.posY}`);
+    for(let y=0; y<imgData.height;y++) {
+      for(let x=0; x<imgData.width;x++) {
+        const offset = (y*imgData.width*4)+(x*4);
+        const hasPixel = imgData.data[offset+3]!==0;
+        if (hasPixel) {
+          mask.push(`${x+this.posX-this.spriteRadius},${y+this.posY-this.spriteRadius}`);
+          //mask2.push(`${x},${y}`);
+        }
       }
     }
+    /*
+    const testResult = new Set(mask2);
+    let str = '';
+    for(let y=0; y<imgData.height;y++) {
+      for(let x=0; x<imgData.width;x++) {
+       str+=(testResult.has(`${x},${y}`)?'#':' ');
+      }
+      str+='\n';
+    }
+    console.log(str);
+
+    console.log(imgData);
+    */
     return new Set(mask);
 
   }
@@ -225,7 +253,7 @@ class Tank extends VisibleGameObject {
 
     super(posX, posY, 25);
     this.speed = 3;
-    this.orientation = rand(1,5); 
+    this.orientation = rand(1,5);
     this.color = color ?? `rgb(${rand(0,128)},${rand(0,128)},${rand(0,128)}`;
 
   }
@@ -237,11 +265,21 @@ class Tank extends VisibleGameObject {
 
     ctx.fillStyle = this.color;
     ctx.beginPath();
-    // Find middle 
     ctx.rotate(Math.PI*(this.orientation/2-0.5));
-    ctx.moveTo(0, -this.spriteRadius);
-    ctx.lineTo(this.spriteRadius, this.spriteRadius);
-    ctx.lineTo(-this.spriteRadius, this.spriteRadius);
+
+    // bottom left
+    ctx.moveTo(-25, 25);
+    ctx.lineTo(25, 25);
+    ctx.lineTo(25, -15);
+
+    // nuzzle start
+    ctx.lineTo(5, -15);
+    ctx.lineTo(5, -25);
+    ctx.lineTo(-5, -25);
+    ctx.lineTo(-5, -15);
+
+    // Complete the box
+    ctx.lineTo(-25, -15);
     ctx.closePath();
     ctx.fill();
 
@@ -324,15 +362,15 @@ class Bullet extends VisibleGameObject {
   /**
    * @param {number} posX
    * @param {number} posY
-   * @param {number|null} direction 
+   * @param {number|null} direction
    * @param {GameObject} owner
    */
   constructor(posX, posY, direction, owner) {
-    super(posX, posY, 5);
+    super(posX, posY, 10);
     this.posX = posX;
     this.posY = posY;
     this.owner = owner;
-    const speed = 7;
+    const speed = 5;
     this.speedX = 0;
     this.speedY = 0;
     switch(direction) {
@@ -361,7 +399,6 @@ class Bullet extends VisibleGameObject {
 
     ctx.fillStyle = this.color;
     ctx.beginPath();
-    // Find middle 
     ctx.arc(0, 0, this.spriteRadius, 0, 2 * Math.PI, false);
     ctx.fill();
 
@@ -384,7 +421,7 @@ class Bullet extends VisibleGameObject {
     }
 
     if (!legalPosition(this.posX, this.posY, this.spriteRadius)) {
-        
+
       this.free();
 
     }
@@ -394,10 +431,11 @@ class Bullet extends VisibleGameObject {
 }
 
 
-class AITank extends Tank { 
+class AITank extends Tank {
 
   step() {
 
+    /*
     if (chance(20)) {
       this.orientation = rand(1,5);
     }
@@ -405,6 +443,7 @@ class AITank extends Tank {
       this.shoot();
     }
     this.move();
+    */
 
   }
 
