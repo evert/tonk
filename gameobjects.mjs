@@ -332,7 +332,7 @@ export class Bullet extends VisibleGameObject {
    * @param {GameObject} owner
    */
   constructor(game, posX, posY, direction, owner) {
-    super(game, posX, posY, 10);
+    super(game, posX, posY, 7);
     this.posX = posX;
     this.posY = posY;
     this.owner = owner;
