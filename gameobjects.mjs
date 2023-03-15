@@ -54,24 +54,26 @@ export class VisibleGameObject extends GameObject {
    * translation to the center of the object.
    *
    * @param {CanvasRenderingContext2D} ctx
+   * @param {number} frame
    */
-  render(ctx) {
+  render(ctx, frame) {
 
     if (!('draw' in this)) {
       throw new Error('This GameObject is not drawable');
     }
     ctx.save();
     ctx.translate(this.posX, this.posY);
-    (this).draw(ctx);
+    (this).draw(ctx, frame);
     ctx.restore();
 
   }
 
   /**
    * @param {CanvasRenderingContext2D} ctx
+   * @param {number} frame
    * @abstract
    */
-  draw(ctx) {
+  draw(ctx, frame) {
 
     throw new Error('Draw is not implemented');
 
@@ -80,7 +82,7 @@ export class VisibleGameObject extends GameObject {
   /**
    * @param {VisibleGameObject} sprite
    */
-  intersects(sprite) {
+  intersects(sprite, filter = null) {
 
     // Wide check
     const a = this.getBoundingBox();
@@ -131,7 +133,7 @@ export class VisibleGameObject extends GameObject {
     const offscreenCanvas = new OffscreenCanvas(this.spriteRadius*2, this.spriteRadius*2);
     const octx = /** @type any */ (offscreenCanvas.getContext('2d'));
     octx.translate(this.spriteRadius,this.spriteRadius);
-    this.draw(octx);
+    this.draw(octx,0);
 
     const imgData = octx.getImageData(0,0,this.spriteRadius*2,this.spriteRadius*2);
 
@@ -174,22 +176,41 @@ export class Tank extends VisibleGameObject {
    * @param {Game} game
    * @param {number} posX
    * @param {number} posY
-   * @param {string|null} color
+   * @param {number} color
    */
-  constructor(game, posX, posY, color = null) {
+  constructor(game, posX, posY, color) {
 
     super(game, posX, posY, 25);
     this.speed = 3;
     this.orientation = rand(1,5);
-    this.color = color ?? `rgb(${rand(0,128)},${rand(0,128)},${rand(0,128)}`;
+    this.color = color;
 
   }
 
   /**
    * @param {CanvasRenderingContext2D} ctx
+   * @param {number} frame
    */
-  draw(ctx) {
+  draw(ctx, frame) {
 
+    ctx.imageSmoothingEnabled = false;
+
+    const offset =
+      (frame % 2) +
+      // Funny formula to deal with the fact that the
+      // orientation on the sprite sheet is counter clockwise
+      // and ours is clockwise
+      ((5-this.orientation) % 4) * 2 +
+      this.color * 8;
+
+    ctx.drawImage(
+      this.game.spriteSheet,
+      (1+offset*16), 1, 14, 14,
+      -24, -24, 51, 51,
+    );
+
+
+    /*
     ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.rotate(Math.PI*(this.orientation/2-0.5));
@@ -209,6 +230,7 @@ export class Tank extends VisibleGameObject {
     ctx.lineTo(-25, -15);
     ctx.closePath();
     ctx.fill();
+    */
 
   }
 
@@ -245,8 +267,24 @@ export class Tank extends VisibleGameObject {
 
     }
     if (this.game.legalPosition(newX, newY, this.spriteRadius)) {
+
+      /**
+       * Temporarily storing old positin
+       */
+      const oldPos = [this.posX, this.posY];
+
       this.posX = newX;
       this.posY = newY;
+
+      for(const sprite of this.game.sprites) {
+
+        if (sprite instanceof Brick && this.intersects(sprite)) {
+          // Roll back
+          [this.posX, this.posY] = oldPos;
+          break;
+        }
+
+      }
     }
 
   }
@@ -317,13 +355,14 @@ export class Bullet extends VisibleGameObject {
     }
 
     this.direction = direction;
-    this.color = '#000000';
+    this.color = '#CCC';
   }
 
   /**
    * @param {CanvasRenderingContext2D} ctx
+   * @param {number} frame
    */
-  draw(ctx) {
+  draw(ctx, frame) {
 
     ctx.fillStyle = this.color;
     ctx.beginPath();
@@ -379,9 +418,10 @@ export class Brick extends VisibleGameObject {
 
   /**
    * @param {CanvasRenderingContext2D} ctx
+   * @param {number} frame
    */
-  draw(ctx) {
-  
+  draw(ctx, frame) {
+
     ctx.fillStyle = '#880000';
     ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
 
