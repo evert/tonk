@@ -44,30 +44,21 @@ function main() {
   game = new Game(canvas);
 
   for(let i=0; i<10;i++) {
-    const tank = new AITank(game, rand(100,900),rand(100,700));
+    const tank = new AITank(game, rand(100,900),rand(100,700), 1);
   }
 
-  const playerTank = new Tank(game, rand(100,900),rand(100,700), '#FF0000');
+  const playerTank = new Tank(game, rand(100,900),rand(100,700), 0);
   game.sprites.add(playerTank);
   playerSprite = playerTank;
 
   loadLevel(game, level).map( sprite => game.sprites.add(sprite) );
 
-  game.animationLoop();
   window.addEventListener('keydown', keyDown);
-
-  setInterval(step,30);
+  game.start();
 
 }
 document.addEventListener('DOMContentLoaded', main);
 
-function step() {
-
-  for(const player of game.behaviours) {
-    player.step();
-  }
-
-}
 
 /**
  * @param {KeyboardEvent} ev
@@ -105,7 +96,7 @@ function loadLevel(game, levelSpec) {
 
     let columnNum = 0;
     for(const cell of line.split('')) {
-     
+
       switch(cell) {
 
         case '#' :
