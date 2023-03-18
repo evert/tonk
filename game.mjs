@@ -32,6 +32,11 @@ export class Game {
   render() {
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.sprites = new Set(
+      Array.from(this.sprites).sort( (a,b) => a.zIndex - b.zIndex)
+    );
+
     for(const sprite of this.sprites) sprite.render(this.ctx, this.frame);
 
 

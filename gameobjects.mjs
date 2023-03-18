@@ -44,6 +44,7 @@ export class VisibleGameObject extends GameObject {
     if ('draw' in this) {
       this.game.sprites.add(this);
     }
+    this.zIndex = 10;
 
   }
 
@@ -181,9 +182,11 @@ export class Tank extends VisibleGameObject {
   constructor(game, posX, posY, color) {
 
     super(game, posX, posY, 25);
-    this.speed = 3;
+    this.speed = 5;
     this.orientation = rand(1,5);
     this.color = color;
+    /** @type {'idle'|'move'} */
+    this.mode = 'idle';
 
   }
 
@@ -235,6 +238,17 @@ export class Tank extends VisibleGameObject {
   }
 
   /**
+   * @param {'idle'|'move'} mode
+   * @param {any} direction
+   */
+  setMode(mode, direction) {
+
+    this.mode = mode;
+    this.direction = direction ?? this.direction;
+
+  }
+
+  /**
    * @param {number|null} direction
    */
   move(direction = null) {
@@ -278,7 +292,10 @@ export class Tank extends VisibleGameObject {
 
       for(const sprite of this.game.sprites) {
 
-        if (sprite instanceof Brick && this.intersects(sprite)) {
+        if (sprite instanceof Tree) {
+          continue;
+        }
+        if (sprite !== this && this.intersects(sprite)) {
           // Roll back
           [this.posX, this.posY] = oldPos;
           break;
@@ -310,7 +327,12 @@ export class Tank extends VisibleGameObject {
 
   shoot() {
 
-    new Bullet(this.game, ...this.getMuzzleLocation(), this.orientation, this);
+    new Bullet(
+      this.game,
+      ...this.getMuzzleLocation(),
+      this.orientation,
+      this
+    );
 
   }
 
@@ -336,7 +358,7 @@ export class Bullet extends VisibleGameObject {
     this.posX = posX;
     this.posY = posY;
     this.owner = owner;
-    const speed = 5;
+    const speed = 7;
     this.speedX = 0;
     this.speedY = 0;
     switch(direction) {
@@ -378,6 +400,12 @@ export class Bullet extends VisibleGameObject {
 
     for(const sprite of this.game.sprites) {
       if (sprite === this || sprite === this.owner) {
+        continue;
+      }
+      if (sprite instanceof Water) {
+        continue;
+      }
+      if (sprite instanceof Tree) {
         continue;
       }
       if (this.intersects(sprite)) {
@@ -422,9 +450,62 @@ export class Brick extends VisibleGameObject {
    */
   draw(ctx, frame) {
 
-    ctx.fillStyle = '#880000';
-    ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+      this.game.spriteSheet,
+      256, 64, 8, 8,
+      -16, -16, 32, 32,
+    );
+    //ctx.fillStyle = '#880000';
+    //ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
 
   }
 
+}
+
+export class Water extends VisibleGameObject {
+
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} frame
+   */
+  draw(ctx, frame) {
+
+    ctx.fillStyle = '#0000FF';
+    ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
+
+  }
+}
+
+export class Tree extends VisibleGameObject {
+
+  /**
+   * @param {Game} game
+   * @param {number} posX
+   * @param {number} posY
+   * @param {number} spriteRadius
+   */
+  constructor(game, posX, posY, spriteRadius) {
+
+    super(game, posX, posY, spriteRadius);
+    this.zIndex = 20;
+
+  }
+
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} frame
+   */
+  draw(ctx, frame) {
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#007700';
+    //ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
+    ctx.drawImage(
+      this.game.spriteSheet,
+      272, 32, 16, 16,
+      -24, -24, 51, 51,
+    );
+
+  }
 }
