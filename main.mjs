@@ -1,5 +1,5 @@
 // @ts-check
-import { Tank, AITank, Brick } from './gameobjects.mjs';
+import { Tank, AITank, Brick, Water, Tree } from './gameobjects.mjs';
 import { rand } from './util.mjs';
 import { Game } from './game.mjs';
 
@@ -26,11 +26,11 @@ const levelData = `
 ################
 #    C    C C  #
 # ##   ##    # #
-# ##   ## #### #
-# ##   ## # C  #
-#  C   ## #  # #
-# ###  ##  C   #
-#      ######  #
+# ##   ## ## # #
+# ##   ## #TTT #
+#  C   ## #TTT # #
+# ~~~  ##  C   #
+# ~~~  ######  #
 #           C  #
 # ###########  #
 #  1           #
@@ -142,6 +142,24 @@ function loadLevel(game, levelSpec) {
             new Brick(game, columnNum*cellSize+spriteRadius*3, lineNum*cellSize+spriteRadius,   spriteRadius),
             new Brick(game, columnNum*cellSize+spriteRadius,   lineNum*cellSize+spriteRadius*3, spriteRadius),
             new Brick(game, columnNum*cellSize+spriteRadius*3, lineNum*cellSize+spriteRadius*3, spriteRadius),
+          );
+          break;
+        case '~' :
+          // Every cell in the level results in 4 brick sprites, so they can individually break
+          sprites.push(
+            new Water(game, columnNum*cellSize+spriteRadius,   lineNum*cellSize+spriteRadius,   spriteRadius),
+            new Water(game, columnNum*cellSize+spriteRadius*3, lineNum*cellSize+spriteRadius,   spriteRadius),
+            new Water(game, columnNum*cellSize+spriteRadius,   lineNum*cellSize+spriteRadius*3, spriteRadius),
+            new Water(game, columnNum*cellSize+spriteRadius*3, lineNum*cellSize+spriteRadius*3, spriteRadius),
+          );
+          break;
+        case 'T' :
+          // Every cell in the level results in 4 brick sprites, so they can individually break
+          sprites.push(
+            new Tree(game, columnNum*cellSize+spriteRadius,   lineNum*cellSize+spriteRadius,   spriteRadius),
+            new Tree(game, columnNum*cellSize+spriteRadius*3, lineNum*cellSize+spriteRadius,   spriteRadius),
+            new Tree(game, columnNum*cellSize+spriteRadius,   lineNum*cellSize+spriteRadius*3, spriteRadius),
+            new Tree(game, columnNum*cellSize+spriteRadius*3, lineNum*cellSize+spriteRadius*3, spriteRadius),
           );
           break;
         case ' ':
