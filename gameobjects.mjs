@@ -6,7 +6,7 @@ import { chance, rand } from './util.mjs';
  * @typedef { import('./game.mjs').Game } Game
  */
 
-class GameObject {
+export class GameObject {
 
   /**
    * @param {Game} game
@@ -63,8 +63,24 @@ export class VisibleGameObject extends GameObject {
       throw new Error('This GameObject is not drawable');
     }
     ctx.save();
+    ctx.imageSmoothingEnabled = false;
     ctx.translate(this.posX, this.posY);
     (this).draw(ctx, frame);
+
+    if (this.game.showBoundingBoxes) {
+      const box = this.getRelativeBoundingBox();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#0F0";
+      ctx.strokeRect(box.xMin, box.yMin, box.xMax-box.xMin, box.yMax-box.yMin);
+    }
+    if (this.game.showHitBoxes) {
+      ctx.restore();
+      ctx.save()
+      const box = this.getHitBox();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#F00";
+      ctx.strokeRect(box.xMin, box.yMin, box.xMax-box.xMin, box.yMax-box.yMin);
+    }
     ctx.restore();
 
   }
@@ -83,7 +99,7 @@ export class VisibleGameObject extends GameObject {
   /**
    * @param {VisibleGameObject} sprite
    */
-  intersects(sprite, filter = null) {
+  intersects(sprite, quick = true) {
 
     // Wide check
     const a = this.getBoundingBox();
@@ -92,7 +108,13 @@ export class VisibleGameObject extends GameObject {
     const boundingBoxIntersect = a.xMax >= b.xMin && b.xMax >= a.xMin && a.yMax >= b.yMin && b.yMax >= a.yMin;
     if (!boundingBoxIntersect) return false;
 
-    // Narrow check
+    if (quick) {
+      return true;
+    }
+
+    /**
+     * Actually checking for overlapping pixels
+     */
     const bMask = sprite.getMask();
     const aMask = this.getMask();
 
@@ -107,17 +129,41 @@ export class VisibleGameObject extends GameObject {
   }
 
   /**
-   * Returns the bounding box coordinates
+   * Returns the hitbox.
+   *
+   * This box will be used to determine if something intersected.
+   */
+  getHitBox() {
+
+    return this.getBoundingBox();
+
+  }
+
+  /**
+   * Returns the bounding box coordinates globally.
    */
   getBoundingBox() {
 
+    const r = this.getRelativeBoundingBox();
     return {
-      xMin: this.posX-this.spriteRadius,
-      xMax: this.posX+this.spriteRadius,
-      yMin: this.posY-this.spriteRadius,
-      yMax: this.posY+this.spriteRadius,
+      xMin: this.posX+r.xMin,
+      xMax: this.posX+r.xMax,
+      yMin: this.posY+r.yMin,
+      yMax: this.posY+r.yMax,
     };
 
+  }
+
+  /**
+   * Returns bounding box of the object relative to the center of the object.
+   */
+  getRelativeBoundingBox() {
+    return {
+      xMin: -this.spriteRadius,
+      xMax: +this.spriteRadius,
+      yMin: -this.spriteRadius,
+      yMax: +this.spriteRadius,
+    };
   }
 
   /**
@@ -171,178 +217,7 @@ export class VisibleGameObject extends GameObject {
 
 }
 
-export class Tank extends VisibleGameObject {
 
-  /**
-   * @param {Game} game
-   * @param {number} posX
-   * @param {number} posY
-   * @param {number} color
-   */
-  constructor(game, posX, posY, color) {
-
-    super(game, posX, posY, 25);
-    this.speed = 5;
-    this.orientation = rand(1,5);
-    this.color = color;
-    /** @type {'idle'|'move'} */
-    this.mode = 'idle';
-
-  }
-
-  /**
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {number} frame
-   */
-  draw(ctx, frame) {
-
-    ctx.imageSmoothingEnabled = false;
-
-    const offset =
-      (frame % 2) +
-      // Funny formula to deal with the fact that the
-      // orientation on the sprite sheet is counter clockwise
-      // and ours is clockwise
-      ((5-this.orientation) % 4) * 2 +
-      this.color * 8;
-
-    ctx.drawImage(
-      this.game.spriteSheet,
-      (1+offset*16), 1, 14, 14,
-      -24, -24, 51, 51,
-    );
-
-
-    /*
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.rotate(Math.PI*(this.orientation/2-0.5));
-
-    // bottom left
-    ctx.moveTo(-25, 25);
-    ctx.lineTo(25, 25);
-    ctx.lineTo(25, -15);
-
-    // nuzzle start
-    ctx.lineTo(5, -15);
-    ctx.lineTo(5, -25);
-    ctx.lineTo(-5, -25);
-    ctx.lineTo(-5, -15);
-
-    // Complete the box
-    ctx.lineTo(-25, -15);
-    ctx.closePath();
-    ctx.fill();
-    */
-
-  }
-
-  /**
-   * @param {'idle'|'move'} mode
-   * @param {any} direction
-   */
-  setMode(mode, direction) {
-
-    this.mode = mode;
-    this.direction = direction ?? this.direction;
-
-  }
-
-  /**
-   * @param {number|null} direction
-   */
-  move(direction = null) {
-
-    this.orientation = direction ?? this.orientation;
-
-    /**
-     * @type {number}
-     */
-    let newX = this.posX;
-    /**
-     * @type {number}
-     */
-    let newY = this.posY;
-
-    switch(this.orientation) {
-
-      case 1 :
-        newY-=this.speed;
-        break;
-      case 2 :
-        newX+=this.speed;
-        break;
-      case 3 :
-        newY+=this.speed;
-        break;
-      case 4 :
-        newX-=this.speed;
-        break;
-
-    }
-    if (this.game.legalPosition(newX, newY, this.spriteRadius)) {
-
-      /**
-       * Temporarily storing old positin
-       */
-      const oldPos = [this.posX, this.posY];
-
-      this.posX = newX;
-      this.posY = newY;
-
-      for(const sprite of this.game.sprites) {
-
-        if (sprite instanceof Tree) {
-          continue;
-        }
-        if (sprite !== this && this.intersects(sprite)) {
-          // Roll back
-          [this.posX, this.posY] = oldPos;
-          break;
-        }
-
-      }
-    }
-
-  }
-
-  /**
-   * @returns {[number, number]}
-   */
-  getMuzzleLocation() {
-
-    switch(this.orientation)  {
-      default :
-      case 1 :
-        return [this.posX, this.posY-25];
-      case 2:
-        return [this.posX+25, this.posY];
-      case 3 :
-        return [this.posX, this.posY+25];
-      case 4:
-        return [this.posX-25, this.posY];
-    }
-
-  }
-
-  shoot() {
-
-    new Bullet(
-      this.game,
-      ...this.getMuzzleLocation(),
-      this.orientation,
-      this
-    );
-
-  }
-
-  die() {
-
-    this.free();
-
-  }
-
-}
 
 export class Bullet extends VisibleGameObject {
 
@@ -380,6 +255,7 @@ export class Bullet extends VisibleGameObject {
     this.color = '#CCC';
   }
 
+
   /**
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} frame
@@ -408,7 +284,7 @@ export class Bullet extends VisibleGameObject {
       if (sprite instanceof Tree) {
         continue;
       }
-      if (this.intersects(sprite)) {
+      if (this.intersects(sprite, false)) {
         // Hit!
         sprite.free();
         this.free();
@@ -425,23 +301,6 @@ export class Bullet extends VisibleGameObject {
 
 }
 
-
-export class AITank extends Tank {
-
-  step() {
-
-    if (chance(20)) {
-      this.orientation = rand(1,5);
-    }
-    if (chance(100)) {
-      this.shoot();
-    }
-    this.move();
-
-  }
-
-}
-
 export class Brick extends VisibleGameObject {
 
   /**
@@ -450,7 +309,6 @@ export class Brick extends VisibleGameObject {
    */
   draw(ctx, frame) {
 
-    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
       this.game.spriteSheet,
       256, 64, 8, 8,
@@ -471,8 +329,12 @@ export class Water extends VisibleGameObject {
    */
   draw(ctx, frame) {
 
-    ctx.fillStyle = '#0000FF';
-    ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
+    const frameOffset = (Math.floor(frame/10) % 2) * 16;
+    ctx.drawImage(
+      this.game.spriteSheet,
+      256+frameOffset, 48, 8, 8,
+      -16, -16, 32, 32,
+    );
 
   }
 }
@@ -498,13 +360,12 @@ export class Tree extends VisibleGameObject {
    */
   draw(ctx, frame) {
 
-    ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = '#007700';
     //ctx.fillRect(-this.spriteRadius, -this.spriteRadius, this.spriteRadius*2, this.spriteRadius*2);
     ctx.drawImage(
       this.game.spriteSheet,
-      272, 32, 16, 16,
-      -24, -24, 51, 51,
+      272, 32, 8, 8,
+      -16, -16, 32, 32,
     );
 
   }

@@ -1,3 +1,5 @@
+import { GameObject, VisibleGameObject } from './gameobjects.mjs';
+
 export class Game {
 
   /**
@@ -11,7 +13,11 @@ export class Game {
     this.spriteSheet = new Image();
     this.spriteSheet.src = 'sprites/battle-city.png';
     // For sprite animation we keep track of a frame number.
-    this.frame = 0; 
+    this.frame = 0;
+
+    this.showBoundingBoxes = false;
+    this.showHitBoxes = false;
+
   }
 
   /**
@@ -73,4 +79,18 @@ export class Game {
     }
 
   }
+
+  /**
+   * @param {GameObject} obj
+   */
+  addObject(obj) {
+    if (obj instanceof VisibleGameObject) {
+      this.sprites.add(obj);
+    }
+    if ('step' in obj) {
+      this.behaviours.add(obj);
+    }
+  }
+
+
 }
