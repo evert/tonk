@@ -1,7 +1,8 @@
 // @ts-check
-import { Tank, AITank, Brick, Water, Tree } from './gameobjects.mjs';
+import { Brick, Water, Tree } from './gameobjects.mjs';
 import { rand } from './util.mjs';
 import { Game } from './game.mjs';
+import { Tank, AITank } from './tank.mjs';
 
 /**
  * @typedef { import("./gameobjects.mjs").VisibleGameObject } VisibleGameObject
@@ -52,12 +53,11 @@ function main() {
   }
 
   const playerTank = new Tank(game, ...level.p1Position, 0);
-  game.sprites.add(playerTank);
+  game.addObject(playerTank);
   playerSprite = playerTank;
 
-
-
   window.addEventListener('keydown', keyDown);
+  window.addEventListener('keyup', keyUp);
   game.start();
 
 }
@@ -71,13 +71,19 @@ function keyDown(ev) {
 
   switch(ev.key) {
 
-    case 'ArrowUp' : playerSprite.move(1); break;
-    case 'ArrowRight': playerSprite.move(2); break;
-    case 'ArrowDown': playerSprite.move(3); break;
-    case 'ArrowLeft': playerSprite.move(4); break;
+    case 'ArrowUp' : playerSprite.setMode('move', 1); break;
+    case 'ArrowRight': playerSprite.setMode('move', 2); break;
+    case 'ArrowDown': playerSprite.setMode('move', 3); break;
+    case 'ArrowLeft': playerSprite.setMode('move', 4); break;
     case ' ': playerSprite.shoot(); break;
 
   }
+
+}
+
+function keyUp(ev) {
+
+  playerSprite.setMode('idle');
 
 }
 
