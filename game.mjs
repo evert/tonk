@@ -1,4 +1,26 @@
 import { GameObject, VisibleGameObject } from './gameobjects.mjs';
+import { Tank } from './tank.mjs';
+
+/**
+ * @typedef {Object} PlayerMoveEvent
+ * @property {number} PlayerMoveEvent.playerId
+ * @property {'move'} PlayerMoveEvent.type
+ * @property {number} PlayerMoveEvent.direction
+ */
+/**
+ * @typedef {Object} PlayerIdleEvent
+ * @property {number} PlayerMoveEvent.playerId
+ * @property {'idle'} PlayerMoveEvent.type
+ */
+/**
+ * @typedef {Object} PlayerShootEvent
+ * @property {number} PlayerMoveEvent.playerId
+ * @property {'shoot'} PlayerMoveEvent.type
+ */
+
+/**
+ * @typedef {PlayerMoveEvent|PlayerIdleEvent|PlayerShootEvent} GameEvent
+ */
 
 export class Game {
 
@@ -8,6 +30,7 @@ export class Game {
   constructor(canvas) {
     this.sprites = new Set();
     this.behaviours = new Set();
+    this.players = new Map();
     this.canvas = canvas;
     this.ctx = /** @type {CanvasRenderingContext2D} */(canvas.getContext('2d'));
     this.spriteSheet = new Image();
@@ -17,6 +40,8 @@ export class Game {
 
     this.showBoundingBoxes = false;
     this.showHitBoxes = false;
+
+    this.lastPlayerId = 0;
 
   }
 
@@ -90,7 +115,30 @@ export class Game {
     if ('step' in obj) {
       this.behaviours.add(obj);
     }
+    if (obj instanceof Tank) {
+      const tankId = ++this.lastPlayerId;
+      obj.playerId = tankId;
+      this.players.set(tankId, obj);
+    }
   }
 
+  /**
+   * @param {GameEvent} ev
+   */
+  emit(ev) {
+
+    switch(ev.type) {
+      case 'move' :
+        this.players.get(ev.playerId).setMode('move', ev.direction);
+        break;
+      case 'idle' :
+        this.players.get(ev.playerId).setMode('idle');
+        break;
+      case 'shoot' :
+        this.players.get(ev.playerId).shoot();
+        break;
+    }
+
+  }
 
 }
