@@ -63,11 +63,15 @@ function main() {
 }
 document.addEventListener('DOMContentLoaded', main);
 
+let lastMoveKey = '';
+
 
 /**
  * @param {KeyboardEvent} ev
  */
 function keyDown(ev) {
+
+  if (ev.key.startsWith('Arrow')) lastMoveKey = ev.key;
 
   switch(ev.key) {
 
@@ -86,7 +90,13 @@ function keyDown(ev) {
  */
 function keyUp(ev) {
 
-  playerSprite.setMode('idle');
+  /**
+   * If the last arrow key that was spressed was released, we want to
+   * stop the tank
+   */
+  if (ev.key === lastMoveKey) {
+    playerSprite.setMode('idle');
+  }
 
 }
 
