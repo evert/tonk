@@ -65,21 +65,38 @@ document.addEventListener('DOMContentLoaded', main);
 
 let lastMoveKey = '';
 
+/**
+ * @type Record<string, number>
+ */
+const directionMap = {
+  ArrowUp: 1,
+  ArrowRight: 2,
+  ArrowDown: 3,
+  ArrowLeft: 4
+};
 
 /**
  * @param {KeyboardEvent} ev
  */
 function keyDown(ev) {
 
-  if (ev.key.startsWith('Arrow')) lastMoveKey = ev.key;
+  if (ev.key.startsWith('Arrow')) {
+    lastMoveKey = ev.key;
+    game.emit({
+      playerId: playerSprite.playerId,
+      type: 'move',
+      direction: directionMap[ev.key],
+    });
+  }
 
   switch(ev.key) {
 
-    case 'ArrowUp' : playerSprite.setMode('move', 1); break;
-    case 'ArrowRight': playerSprite.setMode('move', 2); break;
-    case 'ArrowDown': playerSprite.setMode('move', 3); break;
-    case 'ArrowLeft': playerSprite.setMode('move', 4); break;
-    case ' ': playerSprite.shoot(); break;
+    case ' ':
+      game.emit({
+        playerId: playerSprite.playerId,
+        type: 'shoot',
+      });
+      break;
 
   }
 
@@ -95,7 +112,10 @@ function keyUp(ev) {
    * stop the tank
    */
   if (ev.key === lastMoveKey) {
-    playerSprite.setMode('idle');
+    game.emit({
+      playerId: playerSprite.playerId,
+      type: 'idle',
+    });
   }
 
 }

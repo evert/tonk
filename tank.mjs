@@ -21,6 +21,7 @@ export class Tank extends VisibleGameObject {
     /** @type {'idle'|'move'} */
     this.mode = 'idle';
     this.spriteVariant = variant;
+    this.playerId = 0;
 
   }
 
