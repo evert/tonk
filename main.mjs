@@ -49,7 +49,7 @@ function main() {
   level.sprites.map( sprite => game.sprites.add(sprite) );
 
   for(const cpuPosition of level.cpuPositions) {
-    const tank = new AITank(game, ...cpuPosition, 1);
+    const tank = new AITank(game, ...cpuPosition, 1, rand(1,9));
   }
 
   const playerTank = new Tank(game, ...level.p1Position, 0);
@@ -81,6 +81,9 @@ function keyDown(ev) {
 
 }
 
+/**
+ * @param {KeyboardEvent} ev
+ */
 function keyUp(ev) {
 
   playerSprite.setMode('idle');

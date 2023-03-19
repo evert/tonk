@@ -12,7 +12,7 @@ export class Tank extends VisibleGameObject {
    * @param {number} posY
    * @param {number} color
    */
-  constructor(game, posX, posY, color) {
+  constructor(game, posX, posY, color, variant = 1) {
 
     super(game, posX, posY, 25);
     this.speed = 5;
@@ -20,6 +20,7 @@ export class Tank extends VisibleGameObject {
     this.color = color;
     /** @type {'idle'|'move'} */
     this.mode = 'idle';
+    this.spriteVariant = variant;
 
   }
 
@@ -44,7 +45,7 @@ export class Tank extends VisibleGameObject {
 
     ctx.drawImage(
       this.game.spriteSheet,
-      (1+offset*16), 1, 14, 14,
+      (1+offset*16), 1+(this.spriteVariant-1)*16, 14, 14,
       -25, -25, 26*2, 26*2,
     );
 
