@@ -14,7 +14,7 @@ export class Tank extends VisibleGameObject {
    */
   constructor(game, posX, posY, color, variant = 1) {
 
-    super(game, posX, posY, 25);
+    super(game, posX, posY, 23);
     this.speed = 5;
     this.direction = rand(1,5);
     this.color = color;
