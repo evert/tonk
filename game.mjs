@@ -52,6 +52,7 @@ export class Game {
    */
   legalPosition(x, y, spriteRadius) {
 
+   // Check the bounding box of the entire level
     if (x < spriteRadius || x > this.canvas.width-spriteRadius || y < spriteRadius || y > this.canvas.height - spriteRadius) {
       return false;
     } else {

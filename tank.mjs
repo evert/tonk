@@ -1,7 +1,7 @@
 /**
  * @typedef { import('./game.mjs').Game } Game
  */
-import { VisibleGameObject, Bullet, Tree } from './gameobjects.mjs';
+import { VisibleGameObject, Bullet } from './gameobjects.mjs';
 import { chance, rand } from './util.mjs';
 
 export class Tank extends VisibleGameObject {
@@ -61,67 +61,6 @@ export class Tank extends VisibleGameObject {
 
     this.mode = mode;
     this.direction = direction ?? this.direction;
-
-  }
-
-  step() {
-
-    switch(this.mode) {
-
-      case 'idle' :
-        break;
-      case 'move' :
-        /**
-         * @type {number}
-         */
-        let newX = this.posX;
-        /**
-         * @type {number}
-         */
-        let newY = this.posY;
-
-        switch(this.direction) {
-
-          case 1 :
-            newY-=this.speed;
-            break;
-          case 2 :
-            newX+=this.speed;
-            break;
-          case 3 :
-            newY+=this.speed;
-            break;
-          case 4 :
-            newX-=this.speed;
-            break;
-
-        }
-        if (this.game.legalPosition(newX, newY, this.spriteRadius)) {
-
-          /**
-           * Temporarily storing old positin
-           */
-          const oldPos = [this.posX, this.posY];
-
-          this.posX = newX;
-          this.posY = newY;
-
-          for(const sprite of this.game.sprites) {
-
-            if (sprite instanceof Tree) {
-              continue;
-            }
-            if (sprite !== this && this.intersects(sprite)) {
-              // Roll back
-              [this.posX, this.posY] = oldPos;
-              break;
-            }
-
-          }
-        }
-
-
-    }
 
   }
 
